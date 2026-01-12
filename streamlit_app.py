@@ -42,6 +42,9 @@ min_roe = st.sidebar.slider("Minimum ROE (%)", min_value=0, max_value=50, value=
 max_pe = st.sidebar.slider("Maximum PE", min_value=0, max_value=100, value=30)
 max_pb = st.sidebar.slider("Maximum PB", min_value=0.0, max_value=10.0, value=2.0)
 
+# 让用户选择要显示的股票数量
+top_n = st.sidebar.slider("Number of top stocks to display", min_value=1, max_value=20, value=10)
+
 # 执行筛选
 filtered = df[
     (df[eps_col] > min_eps) &
@@ -58,20 +61,21 @@ st.dataframe(filtered)
 # 使用 Plotly 生成图表
 st.subheader("📊 Visualization")
 
-top10 = filtered.head(10)
+# 根据选择的数量获取前 N 个股票
+top_stocks = filtered.head(top_n)
 
-if len(top10) > 0:
-    # Top 10 ROE 股票
-    fig = px.bar(top10, 
+if len(top_stocks) > 0:
+    # Top N ROE 股票
+    fig = px.bar(top_stocks, 
                  y=name_col, 
                  x=roe_col, 
                  orientation="h", 
-                 title="Top 10 Stocks by ROE", 
+                 title="Top Stocks by ROE", 
                  labels={roe_col: "ROE (%)", name_col: "Stock Name"})
     st.plotly_chart(fig)
 
     # PE + PB 比较
-    fig2 = px.bar(top10, 
+    fig2 = px.bar(top_stocks, 
                   x=name_col, 
                   y=[pe_col, pb_col], 
                   title="PE + PB Comparison", 
