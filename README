@@ -1,0 +1,47 @@
+# 📊 Interactive Stock Screening System
+
+Welcome to the **Interactive Stock Screening System**. This app helps you upload financial data and customize screening rules to analyze stocks. You can filter stocks based on criteria such as EPS (Earnings Per Share), ROE (Return on Equity), PE (Price-to-Earnings ratio), and PB (Price-to-Book ratio).
+
+## Features
+- **Data Upload**: Upload an Excel file with stock data for screening.
+- **Customizable Filters**: Set minimum EPS, ROE, and maximum PE and PB to filter stocks.
+- **Interactive Visualizations**: Visualize top stocks based on ROE and compare PE and PB for the selected stocks.
+- **Download Results**: Download the filtered stock data as an Excel file.
+
+## How to Use
+1. **Upload Financial Data**: 
+   - Click on "Browse files" to upload your Excel file containing stock data. The file should contain columns for stock names, EPS, ROE, PE, and PB.
+   
+2. **Set Screening Criteria**: 
+   - Use the sliders in the sidebar to set your custom screening criteria:
+     - Minimum EPS
+     - Minimum ROE (%)
+     - Maximum PE
+     - Maximum PB
+
+3. **View Screening Results**: 
+   - After applying your criteria, the app will display a list of stocks that meet the specified conditions.
+
+4. **Visualize Data**: 
+   - The app will generate visualizations for the top 10 stocks based on ROE, and compare PE and PB ratios for those stocks.
+
+5. **Download the Results**: 
+   - You can download the filtered stock data as an Excel file by clicking the "Download Excel" button.
+
+## Data Format
+The Excel file should contain the following columns:
+- **Stock Name** (最新股票名称_Lstknm)
+- **EPS** (每股收益(摊薄)(元/股)_EPS)
+- **ROE** (净资产收益率(摊薄)(%)_ROE)
+- **PE** (市盈率_PE)
+- **PB** (市净率_PB)
+
+## Dependencies
+This app uses the following Python libraries:
+- `pandas` for data manipulation
+- `plotly` for interactive visualizations
+- `streamlit` for building the web app
+
+To install the dependencies, run:
+```bash
+pip install pandas plotly streamlit
