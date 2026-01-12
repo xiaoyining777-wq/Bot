@@ -164,3 +164,22 @@ if len(top10) > 0:
     st.pyplot(fig2)
 else:
     st.info("No stocks meet the selected criteria.")
+    
+# 让标签显示得更清晰，避免重叠
+fig, ax = plt.subplots(figsize=(10, 5))  # 增加图表宽度
+ax.barh(top10[name_col], top10[roe_col])
+ax.set_xlabel("ROE (%)")
+ax.set_title("Top 10 Stocks by ROE")
+
+# 调整 x 轴标签显示方式，避免重叠
+plt.xticks(rotation=45, ha="right")  # 增加标签旋转角度
+st.pyplot(fig)
+
+# 第二个图表：调整标签的显示方式
+fig2, ax2 = plt.subplots(figsize=(10, 5))  # 增加图表宽度
+ax2.bar(top10[name_col], top10[pe_col], label="PE")
+ax2.bar(top10[name_col], top10[pb_col], bottom=top10[pe_col], label="PB")
+ax2.set_title("PE + PB Comparison")
+ax2.legend()
+plt.xticks(rotation=45, ha="right")  # 调整 x 轴标签的旋转角度
+st.pyplot(fig2)
