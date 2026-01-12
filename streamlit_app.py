@@ -1,35 +1,39 @@
 import os
-import matplotlib.pyplot as plt
+import matplotlib
 import matplotlib.font_manager as fm
-import streamlit as st
+import matplotlib.pyplot as plt
 import pandas as pd
+import streamlit as st
 
-# ========== 运行时下载并注册字体（如果 fonts/ 目录为空） ==========
-FONT_DIR = "fonts"
-os.makedirs(FONT_DIR, exist_ok=True)
+# =========================
+# 解决字体问题：设置字体
+# =========================
 
-# 假设字体已经放在 fonts 文件夹中，或者使用系统字体
-font_path = "fonts/NotoSansSC-Regular.otf"  # 你可以替换成你实际字体的路径
+# 设置 Matplotlib 配置，确保绘图时正确显示中文
+# 如果没有找到字体，使用内置字体作为备选
+def set_matplotlib_font():
+    # 设置字体为 SimHei（中文常用字体），并设置支持负号
+    matplotlib.rcParams["axes.unicode_minus"] = False  # 使负号能正常显示
+    # 尝试直接从系统中加载字体
+    font_list = ['SimHei', 'Arial Unicode MS', 'Microsoft YaHei']  # 可选字体
+    font_found = False
 
-# 如果找不到字体，则尝试使用系统字体
-if not os.path.exists(font_path):
-    font_path = fm.findSystemFonts(fontpaths=None, fontext='ttf')[0]  # 使用系统字体
+    for font in font_list:
+        try:
+            # 检查是否存在该字体
+            fm.fontManager.findSystemFonts(fontpaths=None, fontext='ttf', fontname=font)
+            matplotlib.rcParams["font.family"] = font
+            font_found = True
+            break
+        except Exception as e:
+            print(f"Font {font} not found, trying next one...")
 
-# 注册字体到 matplotlib 并设置为默认字体
-font_fp = None
-if os.path.exists(font_path):
-    try:
-        fm.fontManager.addfont(font_path)
-        font_fp = fm.FontProperties(fname=font_path)
-        font_name = font_fp.get_name()
-        matplotlib.rcParams["font.family"] = font_name
-        matplotlib.rcParams["font.sans-serif"] = [font_name]
-        matplotlib.rcParams["axes.unicode_minus"] = False
-        st.info(f"Loaded font: {os.path.basename(font_path)} (family: {font_name})")
-    except Exception as e:
-        st.warning(f"Failed to register font {font_path}: {e}")
-else:
-    st.warning("No suitable font found. Using system font instead.")
+    if not font_found:
+        # 如果未找到合适的字体，使用默认字体
+        matplotlib.rcParams["font.family"] = "Arial"  # 默认字体
+        st.warning("No Chinese font found. Default font 'Arial' is used.")
+
+set_matplotlib_font()
 
 # =========================
 # 页面设置
@@ -154,9 +158,8 @@ if len(top10) > 0:
     ax.set_xlabel("ROE (%)")
     ax.set_title("Top 10 Stocks by ROE")
     # 确保 y 轴 tick 使用中文字体（如果 font_fp 存在）
-    if font_fp is not None:
-        for label in ax.get_yticklabels():
-            label.set_fontproperties(font_fp)
+    for label in ax.get_yticklabels():
+        label.set_fontproperties(fm.FontProperties(fname=os.path.join('fonts', 'NotoSansSC-Regular.otf')))
     st.pyplot(fig)
 
     fig2, ax2 = plt.subplots(figsize=(8, 5))
@@ -166,9 +169,6 @@ if len(top10) > 0:
     ax2.legend()
     # 设置 x tick 旋转并确保字体
     plt.setp(ax2.get_xticklabels(), rotation=45, ha="right")
-    if font_fp is not None:
-        for label in ax2.get_xticklabels():
-            label.set_fontproperties(font_fp)
     st.pyplot(fig2)
 else:
     st.info("No stocks meet the selected criteria.")
