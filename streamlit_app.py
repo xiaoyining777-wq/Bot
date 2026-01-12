@@ -10,6 +10,27 @@ st.set_page_config(
     layout="wide"
 )
 
+# =========================
+# 页面样式优化
+# =========================
+st.markdown("""
+<style>
+    .reportview-container {
+        background-color: #f4f4f4; /* 页面背景颜色 */
+    }
+    .sidebar .sidebar-content {
+        background-color: #ececec; /* 侧边栏背景颜色 */
+    }
+    body {
+        font-family: "Arial Unicode MS", sans-serif;
+        background-color: #fafafa; /* 整体背景颜色 */
+    }
+    .css-1v3fvcr {
+        color: #4a4a4a; /* 修改表格文字颜色 */
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("📈 Interactive Stock Screening System")
 st.write("Upload financial data and customize screening rules.")
 
@@ -33,7 +54,7 @@ df = pd.read_excel(uploaded_file)
 st.success("Data loaded successfully!")
 
 # =========================
-# Step 2: 指定列名（与你原代码一致）
+# Step 2: 指定列名
 # =========================
 name_col = "最新股票名称_Lstknm"
 eps_col  = "每股收益(摊薄)(元/股)_EPS"
@@ -43,13 +64,14 @@ pb_col   = "市净率_PB"
 
 required_cols = [name_col, eps_col, roe_col, pe_col, pb_col]
 
+# 校验必要的列是否存在
 for col in required_cols:
     if col not in df.columns:
         st.error(f"Missing required column: {col}")
         st.stop()
 
-df = df[required_cols].dropna()
-df = df[(df[pe_col] > 0) & (df[pb_col] > 0)]
+df = df[required_cols].dropna()  # 删除缺失值
+df = df[(df[pe_col] > 0) & (df[pb_col] > 0)]  # 过滤数据
 
 # =========================
 # Step 3: 侧边栏 – 交互筛选条件
@@ -122,19 +144,23 @@ st.subheader("📊 Visualization")
 
 top10 = filtered.head(10)
 
+# 确保数据大于零
 if len(top10) > 0:
+    # 图表 1: ROE 排序
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.barh(top10[name_col], top10[roe_col])
     ax.set_xlabel("ROE (%)")
     ax.set_title("Top 10 Stocks by ROE")
+    plt.xticks(rotation=45, ha="right")  # 调整X轴标签显示
     st.pyplot(fig)
 
+    # 图表 2: PE 和 PB 比较
     fig2, ax2 = plt.subplots(figsize=(8, 5))
     ax2.bar(top10[name_col], top10[pe_col], label="PE")
     ax2.bar(top10[name_col], top10[pb_col], bottom=top10[pe_col], label="PB")
     ax2.set_title("PE + PB Comparison")
     ax2.legend()
-    plt.xticks(rotation=45, ha="right")
+    plt.xticks(rotation=45, ha="right")  # 旋转标签
     st.pyplot(fig2)
 else:
     st.info("No stocks meet the selected criteria.")
