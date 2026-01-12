@@ -42,8 +42,8 @@ min_roe = st.sidebar.slider("Minimum ROE (%)", min_value=0, max_value=50, value=
 max_pe = st.sidebar.slider("Maximum PE", min_value=0, max_value=100, value=30)
 max_pb = st.sidebar.slider("Maximum PB", min_value=0.0, max_value=10.0, value=2.0)
 
-# 侧边栏 – 选择显示的股票数量
-top_n = st.sidebar.slider("Number of top stocks to display", min_value=1, max_value=30, value=10)
+# 侧边栏 – 选择显示的股票数量（从 1 到 10）
+top_n = st.sidebar.slider("Number of top stocks to display", min_value=1, max_value=10, value=5)
 
 # 执行筛选
 filtered = df[
