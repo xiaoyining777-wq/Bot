@@ -1,16 +1,21 @@
 import os
-
-# 在导入 matplotlib.pyplot 之前设置 MPLCONFIGDIR，避免写入缓存时报错（云环境必须）
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/.matplotlib")
-
-# 先导入 matplotlib 基础与 font_manager（但不要导入 pyplot）
-import matplotlib
-import matplotlib.font_manager as fm
-import requests  # 用于运行时下载字体（若你采用运行时下载方案）
-import streamlit as st
+import matplotlib.pyplot as plt
 import pandas as pd
+import streamlit as st
+import matplotlib.font_manager as fm
+import requests
 
-# ========== 运行时下载并注册字体（如果 fonts/ 目录为空） ==========
+# =========================
+# 页面设置
+# =========================
+st.set_page_config(
+    page_title="Stock Screening App",
+    layout="wide"
+)
+
+# =========================
+# 运行时下载并注册字体（如果 fonts/ 目录为空）
+# =========================
 FONT_DIR = "fonts"
 os.makedirs(FONT_DIR, exist_ok=True)
 
@@ -56,17 +61,9 @@ if font_path and os.path.exists(font_path):
 else:
     st.warning("No font found in fonts/. Chinese may show as boxes if system has no CJK font.")
 
-# 现在可以安全导入 pyplot 并绘图
-import matplotlib.pyplot as plt
-
 # =========================
-# 页面设置
+# 页面内容设置
 # =========================
-st.set_page_config(
-    page_title="Stock Screening App",
-    layout="wide"
-)
-
 st.title("📈 Interactive Stock Screening System")
 st.write("Upload financial data and customize screening rules.")
 
@@ -83,7 +80,6 @@ if uploaded_file is None:
     st.stop()
 
 df = pd.read_excel(uploaded_file)
-
 st.success("Data loaded successfully!")
 
 # =========================
