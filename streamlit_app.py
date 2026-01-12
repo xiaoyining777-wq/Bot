@@ -1,6 +1,48 @@
+import os
+
+# 在导入 matplotlib 之前设置 MPLCONFIGDIR 避免写入缓存时报错（云环境必须）
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/.matplotlib")
+
+import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 import pandas as pd
 import streamlit as st
+
+# =========================
+# 自动查找并加载 fonts/ 目录下的第一个 .ttf/.otf 字体文件
+# =========================
+FONT_DIR = "fonts"
+
+def find_first_font(font_dir: str):
+    if not os.path.isdir(font_dir):
+        return None
+    for root, _, files in os.walk(font_dir):
+        for fn in files:
+            if fn.lower().endswith((".ttf", ".otf")):
+                return os.path.join(root, fn)
+    return None
+
+font_path = find_first_font(FONT_DIR)
+
+if font_path and os.path.exists(font_path):
+    try:
+        fm.fontManager.addfont(font_path)
+        fp = fm.FontProperties(fname=font_path)
+        font_name = fp.get_name()
+        matplotlib.rcParams["font.sans-serif"] = [font_name]
+        # 如果需要也可以设置 monospace 等
+        # matplotlib.rcParams["font.family"] = "sans-serif"
+        st.info(f"Loaded font: {os.path.basename(font_path)} (family: {font_name})")
+    except Exception as e:
+        st.warning(f"Failed to load font {font_path}: {e}")
+else:
+    st.warning(
+        "No font found in fonts/. To display Chinese correctly, put a .ttf/.otf font under fonts/ (e.g. NotoSansSC-Regular.otf)."
+    )
+
+# 确保负号正常显示
+matplotlib.rcParams["axes.unicode_minus"] = False
 
 # =========================
 # 页面设置
@@ -12,9 +54,6 @@ st.set_page_config(
 
 st.title("📈 Interactive Stock Screening System")
 st.write("Upload financial data and customize screening rules.")
-
-plt.rcParams["font.sans-serif"] = ["Arial Unicode MS", "SimHei"]
-plt.rcParams["axes.unicode_minus"] = False
 
 # =========================
 # Step 1: 文件上传
