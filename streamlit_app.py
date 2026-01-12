@@ -1,18 +1,18 @@
 import os
 
-# 在导入 matplotlib 之前设置 MPLCONFIGDIR 避免写入缓存时报错（云环境必须）
+# 在导入 matplotlib.pyplot 之前设置 MPLCONFIGDIR，避免写入缓存时报错（云环境必须）
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/.matplotlib")
 
+# 先导入 matplotlib 基础与 font_manager（但不要导入 pyplot）
 import matplotlib
-import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
-import pandas as pd
+import requests  # 用于运行时下载字体（若你采用运行时下载方案）
 import streamlit as st
+import pandas as pd
 
-# =========================
-# 自动查找并加载 fonts/ 目录下的第一个 .ttf/.otf 字体文件
-# =========================
+# ========== 运行时下载并注册字体（如果 fonts/ 目录为空） ==========
 FONT_DIR = "fonts"
+os.makedirs(FONT_DIR, exist_ok=True)
 
 def find_first_font(font_dir: str):
     if not os.path.isdir(font_dir):
@@ -25,24 +25,39 @@ def find_first_font(font_dir: str):
 
 font_path = find_first_font(FONT_DIR)
 
+# 如果 fonts/ 为空，则尝试下载 NotoSansSC（示例 URL）
+if font_path is None:
+    try:
+        url = "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf"
+        local_font = os.path.join(FONT_DIR, "NotoSansSC-Regular.otf")
+        if not os.path.exists(local_font):
+            resp = requests.get(url, timeout=30)
+            resp.raise_for_status()
+            with open(local_font, "wb") as f:
+                f.write(resp.content)
+        font_path = local_font
+        st.info("Downloaded font to fonts/")  # 可选，便于调试
+    except Exception as e:
+        st.warning(f"Download font failed: {e}")
+
+# 注册字体到 matplotlib 并设置为默认字体
+font_fp = None
 if font_path and os.path.exists(font_path):
     try:
         fm.fontManager.addfont(font_path)
-        fp = fm.FontProperties(fname=font_path)
-        font_name = fp.get_name()
+        font_fp = fm.FontProperties(fname=font_path)
+        font_name = font_fp.get_name()
+        matplotlib.rcParams["font.family"] = font_name
         matplotlib.rcParams["font.sans-serif"] = [font_name]
-        # 如果需要也可以设置 monospace 等
-        # matplotlib.rcParams["font.family"] = "sans-serif"
+        matplotlib.rcParams["axes.unicode_minus"] = False
         st.info(f"Loaded font: {os.path.basename(font_path)} (family: {font_name})")
     except Exception as e:
-        st.warning(f"Failed to load font {font_path}: {e}")
+        st.warning(f"Failed to register font {font_path}: {e}")
 else:
-    st.warning(
-        "No font found in fonts/. To display Chinese correctly, put a .ttf/.otf font under fonts/ (e.g. NotoSansSC-Regular.otf)."
-    )
+    st.warning("No font found in fonts/. Chinese may show as boxes if system has no CJK font.")
 
-# 确保负号正常显示
-matplotlib.rcParams["axes.unicode_minus"] = False
+# 现在可以安全导入 pyplot 并绘图
+import matplotlib.pyplot as plt
 
 # =========================
 # 页面设置
@@ -166,6 +181,10 @@ if len(top10) > 0:
     ax.barh(top10[name_col], top10[roe_col])
     ax.set_xlabel("ROE (%)")
     ax.set_title("Top 10 Stocks by ROE")
+    # 确保 y 轴 tick 使用中文字体（如果 font_fp 存在）
+    if font_fp is not None:
+        for label in ax.get_yticklabels():
+            label.set_fontproperties(font_fp)
     st.pyplot(fig)
 
     fig2, ax2 = plt.subplots(figsize=(8, 5))
@@ -173,7 +192,11 @@ if len(top10) > 0:
     ax2.bar(top10[name_col], top10[pb_col], bottom=top10[pe_col], label="PB")
     ax2.set_title("PE + PB Comparison")
     ax2.legend()
-    plt.xticks(rotation=45, ha="right")
+    # 设置 x tick 旋转并确保字体
+    plt.setp(ax2.get_xticklabels(), rotation=45, ha="right")
+    if font_fp is not None:
+        for label in ax2.get_xticklabels():
+            label.set_fontproperties(font_fp)
     st.pyplot(fig2)
 else:
     st.info("No stocks meet the selected criteria.")
