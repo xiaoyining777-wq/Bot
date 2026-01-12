@@ -1,53 +1,23 @@
 import os
 import matplotlib.pyplot as plt
-import pandas as pd
-import streamlit as st
 import matplotlib.font_manager as fm
-import requests
+import streamlit as st
+import pandas as pd
 
-# =========================
-# 页面设置
-# =========================
-st.set_page_config(
-    page_title="Stock Screening App",
-    layout="wide"
-)
-
-# =========================
-# 运行时下载并注册字体（如果 fonts/ 目录为空）
-# =========================
+# ========== 运行时下载并注册字体（如果 fonts/ 目录为空） ==========
 FONT_DIR = "fonts"
 os.makedirs(FONT_DIR, exist_ok=True)
 
-def find_first_font(font_dir: str):
-    if not os.path.isdir(font_dir):
-        return None
-    for root, _, files in os.walk(font_dir):
-        for fn in files:
-            if fn.lower().endswith((".ttf", ".otf")):
-                return os.path.join(root, fn)
-    return None
+# 假设字体已经放在 fonts 文件夹中，或者使用系统字体
+font_path = "fonts/NotoSansSC-Regular.otf"  # 你可以替换成你实际字体的路径
 
-font_path = find_first_font(FONT_DIR)
-
-# 如果 fonts/ 为空，则尝试下载 NotoSansSC（示例 URL）
-if font_path is None:
-    try:
-        url = "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf"
-        local_font = os.path.join(FONT_DIR, "NotoSansSC-Regular.otf")
-        if not os.path.exists(local_font):
-            resp = requests.get(url, timeout=30)
-            resp.raise_for_status()
-            with open(local_font, "wb") as f:
-                f.write(resp.content)
-        font_path = local_font
-        st.info("Downloaded font to fonts/")  # 可选，便于调试
-    except Exception as e:
-        st.warning(f"Download font failed: {e}")
+# 如果找不到字体，则尝试使用系统字体
+if not os.path.exists(font_path):
+    font_path = fm.findSystemFonts(fontpaths=None, fontext='ttf')[0]  # 使用系统字体
 
 # 注册字体到 matplotlib 并设置为默认字体
 font_fp = None
-if font_path and os.path.exists(font_path):
+if os.path.exists(font_path):
     try:
         fm.fontManager.addfont(font_path)
         font_fp = fm.FontProperties(fname=font_path)
@@ -59,11 +29,16 @@ if font_path and os.path.exists(font_path):
     except Exception as e:
         st.warning(f"Failed to register font {font_path}: {e}")
 else:
-    st.warning("No font found in fonts/. Chinese may show as boxes if system has no CJK font.")
+    st.warning("No suitable font found. Using system font instead.")
 
 # =========================
-# 页面内容设置
+# 页面设置
 # =========================
+st.set_page_config(
+    page_title="Stock Screening App",
+    layout="wide"
+)
+
 st.title("📈 Interactive Stock Screening System")
 st.write("Upload financial data and customize screening rules.")
 
@@ -80,6 +55,7 @@ if uploaded_file is None:
     st.stop()
 
 df = pd.read_excel(uploaded_file)
+
 st.success("Data loaded successfully!")
 
 # =========================
