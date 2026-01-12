@@ -1,4 +1,7 @@
+import os
 import matplotlib.pyplot as plt
+from matplotlib import font_manager as fm
+from matplotlib.font_manager import FontProperties
 import pandas as pd
 import streamlit as st
 
@@ -34,7 +37,45 @@ st.markdown("""
 st.title("📈 Interactive Stock Screening System")
 st.write("Upload financial data and customize screening rules.")
 
-plt.rcParams["font.sans-serif"] = ["Arial Unicode MS", "SimHei"]
+# =========================
+# 字体加载：优先使用 repo 中的字体文件（fonts/），否则在系统字体中查找中文字体
+# =========================
+chinese_fp = None
+font_path_repo = os.path.join("fonts", "NotoSansSC-Regular.otf")  # 推荐放置此字体到 repo/fonts/
+
+def try_use_font_from_path(path):
+    try:
+        fm.fontManager.addfont(path)
+        fp = FontProperties(fname=path)
+        # 设置 rcParams 以便 matplotlib 默认使用该字体
+        plt.rcParams["font.family"] = "sans-serif"
+        plt.rcParams["font.sans-serif"] = [fp.get_name()]
+        return fp
+    except Exception:
+        return None
+
+# 优先使用仓库内字体文件
+if os.path.exists(font_path_repo):
+    chinese_fp = try_use_font_from_path(font_path_repo)
+
+# 如果没有提供仓库字体，尝试在系统字体中寻找常见中文字体
+if chinese_fp is None:
+    # 常见中文字体关键字（按优先级）
+    preferred_keywords = ["Noto", "Noto Sans", "NotoSans", "SimHei", "Microsoft Yahei", "YaHei", "WenQuanYi", "Source Han", "思源", "黑体", "宋体", "方正"]
+    for f in fm.fontManager.ttflist:
+        name = f.name or ""
+        fname = f.fname or ""
+        # 如果字体名或文件名包含关键字，则尝试使用
+        if any(k.lower() in name.lower() for k in preferred_keywords) or any(k.lower() in fname.lower() for k in preferred_keywords):
+            try:
+                chinese_fp = FontProperties(fname=f.fname)
+                plt.rcParams["font.family"] = "sans-serif"
+                plt.rcParams["font.sans-serif"] = [chinese_fp.get_name()]
+                break
+            except Exception:
+                chinese_fp = None
+
+# 保证负号正常显示
 plt.rcParams["axes.unicode_minus"] = False
 
 # =========================
@@ -71,7 +112,8 @@ for col in required_cols:
         st.stop()
 
 df = df[required_cols].dropna()  # 删除缺失值
-df = df[(df[pe_col] > 0) & (df[pb_col] > 0)]  # 过滤数据
+# 过滤掉非正的 PE/PB
+df = df[(df[pe_col] > 0) & (df[pb_col] > 0)]
 
 # =========================
 # Step 3: 侧边栏 – 交互筛选条件
@@ -138,48 +180,54 @@ with open(output_file, "rb") as f:
     )
 
 # =========================
-# Step 7: 可视化
+# Step 7: 可视化（仅当有数据时）
 # =========================
 st.subheader("📊 Visualization")
 
 top10 = filtered.head(10)
 
-# 确保数据大于零
-if len(top10) > 0:
-    # 图表 1: ROE 排序
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.barh(top10[name_col], top10[roe_col])
+if len(top10) == 0:
+    st.info("No stocks meet the selected criteria.")
+else:
+    # 图表 1: ROE 排序（横向条形图）
+    fig, ax = plt.subplots(figsize=(10, 6))
+    # 使用 y 轴为股票名，x 为 ROE
+    ax.barh(top10[name_col], top10[roe_col], color="#2b8cbe")
     ax.set_xlabel("ROE (%)")
     ax.set_title("Top 10 Stocks by ROE")
-    plt.xticks(rotation=45, ha="right")  # 调整X轴标签显示
-    st.pyplot(fig)
 
-    # 图表 2: PE 和 PB 比较
-    fig2, ax2 = plt.subplots(figsize=(8, 5))
-    ax2.bar(top10[name_col], top10[pe_col], label="PE")
-    ax2.bar(top10[name_col], top10[pb_col], bottom=top10[pe_col], label="PB")
+    # 为 yticklabels 设置中文字体（如果可用）
+    if chinese_fp is not None:
+        for label in ax.get_yticklabels():
+            label.set_fontproperties(chinese_fp)
+        ax.xaxis.label.set_fontproperties(chinese_fp)
+        ax.yaxis.label.set_fontproperties(chinese_fp)
+        ax.title.set_fontproperties(chinese_fp)
+    # 反转 y 轴以使最大值在顶部（常见习惯）
+    ax.invert_yaxis()
+    plt.tight_layout()
+    st.pyplot(fig, use_container_width=True)
+
+    # 图表 2: PE 和 PB 比较（柱状堆叠）
+    names = top10[name_col].tolist()
+    x = range(len(names))
+
+    fig2, ax2 = plt.subplots(figsize=(12, 6))
+    ax2.bar(x, top10[pe_col], label="PE", color="#7fbf7b")
+    ax2.bar(x, top10[pb_col], bottom=top10[pe_col], label="PB", color="#d95f02")
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(names, rotation=45, ha="right")
     ax2.set_title("PE + PB Comparison")
+    ax2.set_ylabel("Value")
     ax2.legend()
-    plt.xticks(rotation=45, ha="right")  # 旋转标签
-    st.pyplot(fig2)
-else:
-    st.info("No stocks meet the selected criteria.")
-    
-# 让标签显示得更清晰，避免重叠
-fig, ax = plt.subplots(figsize=(10, 5))  # 增加图表宽度
-ax.barh(top10[name_col], top10[roe_col])
-ax.set_xlabel("ROE (%)")
-ax.set_title("Top 10 Stocks by ROE")
 
-# 调整 x 轴标签显示方式，避免重叠
-plt.xticks(rotation=45, ha="right")  # 增加标签旋转角度
-st.pyplot(fig)
+    # 字体设置
+    if chinese_fp is not None:
+        for label in ax2.get_xticklabels():
+            label.set_fontproperties(chinese_fp)
+        ax2.xaxis.label.set_fontproperties(chinese_fp)
+        ax2.yaxis.label.set_fontproperties(chinese_fp)
+        ax2.title.set_fontproperties(chinese_fp)
 
-# 第二个图表：调整标签的显示方式
-fig2, ax2 = plt.subplots(figsize=(10, 5))  # 增加图表宽度
-ax2.bar(top10[name_col], top10[pe_col], label="PE")
-ax2.bar(top10[name_col], top10[pb_col], bottom=top10[pe_col], label="PB")
-ax2.set_title("PE + PB Comparison")
-ax2.legend()
-plt.xticks(rotation=45, ha="right")  # 调整 x 轴标签的旋转角度
-st.pyplot(fig2)
+    plt.tight_layout()
+    st.pyplot(fig2, use_container_width=True)
