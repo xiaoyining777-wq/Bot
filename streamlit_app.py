@@ -7,42 +7,12 @@ import streamlit as st
 # =========================
 st.set_page_config(
     page_title="Stock Screening App",
-    layout="wide",
-    initial_sidebar_state="expanded",  # 默认展开侧边栏
+    layout="wide"
 )
 
-# 添加自定义CSS样式
-st.markdown("""
-<style>
-    .reportview-container {
-        background-color: #f9f9f9; /* 设置背景颜色 */
-    }
-    .sidebar .sidebar-content {
-        background-color: #f0f0f0; /* 设置侧边栏背景颜色 */
-    }
-    body {
-        font-family: "Arial Unicode MS", sans-serif;
-        background-color: #fafafa; /* 设置整体背景颜色 */
-    }
-    h1 {
-        color: #3366cc;
-    }
-    h2 {
-        color: #444444;
-    }
-    .stDataFrame {
-        background-color: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# 页面标题
 st.title("📈 Interactive Stock Screening System")
 st.write("Upload financial data and customize screening rules.")
 
-# 设置图表的字体和负号
 plt.rcParams["font.sans-serif"] = ["Arial Unicode MS", "SimHei"]
 plt.rcParams["axes.unicode_minus"] = False
 
@@ -129,11 +99,7 @@ filtered = df[
 st.subheader("📋 Screening Results")
 st.write(f"Selected stocks: **{len(filtered)}**")
 
-# 使用侧边栏布局来显示数据表
-col1, col2 = st.columns([3, 1])
-col1.dataframe(filtered, use_container_width=True)
-col2.write("### Filter Criteria")
-col2.write(f"EPS: {min_eps}, ROE: {min_roe}%, PE: {max_pe}, PB: {max_pb}")
+st.dataframe(filtered, use_container_width=True)
 
 # =========================
 # Step 6: 下载结果
@@ -157,17 +123,15 @@ st.subheader("📊 Visualization")
 top10 = filtered.head(10)
 
 if len(top10) > 0:
-    # 可视化 ROE 排名前10股票
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.barh(top10[name_col], top10[roe_col], color='skyblue')
+    ax.barh(top10[name_col], top10[roe_col])
     ax.set_xlabel("ROE (%)")
     ax.set_title("Top 10 Stocks by ROE")
     st.pyplot(fig)
 
-    # 可视化 PE + PB 比较图
     fig2, ax2 = plt.subplots(figsize=(8, 5))
-    ax2.bar(top10[name_col], top10[pe_col], label="PE", color='orange')
-    ax2.bar(top10[name_col], top10[pb_col], bottom=top10[pe_col], label="PB", color='green')
+    ax2.bar(top10[name_col], top10[pe_col], label="PE")
+    ax2.bar(top10[name_col], top10[pb_col], bottom=top10[pe_col], label="PB")
     ax2.set_title("PE + PB Comparison")
     ax2.legend()
     plt.xticks(rotation=45, ha="right")
